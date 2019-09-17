@@ -506,7 +506,7 @@ void loop() {
 void gps_setup(void) {
   ss.begin(57600);
   delay(500);
-       //A small delay is added to give the GPS some time to respond @ 9600bps.
+      
   //Set the refresh rate to 5Hz by using the ublox protocol.
   uint8_t Set_to_5Hz[14] = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xC8, 0x00, 0x01, 0x00, 0x01, 0x00, 0xDE, 0x6A};
   ss.write(Set_to_5Hz, 14);
