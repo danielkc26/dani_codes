@@ -89,7 +89,7 @@ uint32_t bitmask6 = digitalPinToBitMask(pin6);
 uint32_t bitmask7 = digitalPinToBitMask(pin7);
 
 //GPS variables
-uint8_t read_serial_byte, incomming_message[100], number_used_sats, fix_type;
+uint8_t read_serial_byte, incomming_message[250], number_used_sats, fix_type;
 uint8_t waypoint_set, latitude_north, longiude_east ;
 uint16_t message_counter;
 int16_t gps_add_counter;
@@ -116,8 +116,8 @@ int lowExit = 0;
 void setup() {
   Serial.begin(57600);
 
- // pinMode(STATUS_LED, OUTPUT);
- // pinMode(GPS_LED, OUTPUT);
+  pinMode(STATUS_LED, OUTPUT);
+  pinMode(GPS_LED, OUTPUT);
   //  pinMode(BAT_LOW_LED, OUTPUT);
   pinMode(4, OUTPUT);
   pinMode(5, OUTPUT);
@@ -184,8 +184,8 @@ void setup() {
     Serial.println(">>Gyro Calib...");
     //Let's take multiple gyro data samples so we can determine the average gyro offset (calibration).
     for (cal_int = 0; cal_int < 2000 ; cal_int ++){                         //Take 2000 readings for calibration.
-   // digitalWrite(STATUS_LED, LOW);
-    //if(cal_int % 15 == 0)digitalWrite(STATUS_LED,HIGH);                //Change the led status to indicate calibration.
+    digitalWrite(STATUS_LED, LOW);
+    if(cal_int % 15 == 0)digitalWrite(STATUS_LED,HIGH);                //Change the led status to indicate calibration.
     gyro_signalen();                                                        //Read the gyro output.
     gyro_axis_cal[1] += gyro_axis[1];                                       //Ad roll value to gyro_roll_cal.
     gyro_axis_cal[2] += gyro_axis[2];                                       //Ad pitch value to gyro_pitch_cal.
@@ -223,9 +223,9 @@ void setup() {
     //Set digital poort 4, 5, 6 and 7 low.
     GPIO_REG(GPIO_OUTPUT_VAL) &= ~bitmask4 & (~bitmask5) & (~bitmask6) & (~bitmask7);//LOW
     delay(3);                                                               //Wait 3 milliseconds before the next loop.
-   // digitalWrite(STATUS_LED, HIGH);
+    digitalWrite(STATUS_LED, HIGH);
     if (start == 125) {                                                     //Every 125 loops (500ms).
-     // digitalWrite(STATUS_LED, LOW);                                   //Change the led status.
+     digitalWrite(STATUS_LED, LOW);                                   //Change the led status.
       start = 0;                                                            //Start again at 0.
     }
   }
@@ -251,6 +251,7 @@ void setup() {
 //  digitalWrite(STATUS_LED, HIGH); //Turn off the warning led.
 
 }
+int roll=0;
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Main program loop
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -263,9 +264,11 @@ void loop() {
 
   gyro_signalen();
 
+ 
   if (gps_add_counter >= 0)gps_add_counter --;
-
   read_gps();
+ 
+
   //65.5 = 1 deg/sec (check the datasheet of the MPU-6050 for more information).
   gyro_roll_input = (gyro_roll_input * 0.7) + (((float)gyro_roll / 65.5) * 0.3);   //Gyro pid input is deg/sec.
   gyro_pitch_input = (gyro_pitch_input * 0.7) + (((float)gyro_pitch / 65.5) * 0.3);//Gyro pid input is deg/sec.
@@ -387,6 +390,7 @@ void loop() {
   //The battery voltage is needed for compensation.
   //A complementary filter is used to reduce noise.
   //0.09853 = 0.08 * 1.2317.
+  
   battery_voltage = battery_voltage * 0.92 + (adc.readADC(channel) + 65) * 0.09853;
   //Turn on the led if battery voltage is to low.
   //Serial.println(battery_voltage);
@@ -498,24 +502,35 @@ void loop() {
         loop_counter ++;
         if(loop_counter == 60)loop_counter = 0;
   */
-  Serial.print(esc_1); Serial.print("---");
+/* Serial.print(esc_1); Serial.print("---");
   Serial.print(esc_2); Serial.print("---");
-  Serial.print(esc_3); Serial.print("---"); Serial.println(esc_4);
+  Serial.print(esc_3); Serial.print("---"); Serial.println(esc_4);*/
 
 }
 void gps_setup(void) {
-  ss.begin(57600);
+  ss.begin(4800);
   delay(500);
-      
+  // uint8_t Set_to_50Hz[14] = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0x14, 0x00, 0x01, 0x00, 0x01, 0x00, 0x2A, 0x32};//50hz
+       //A small delay is added to give the GPS some time to respond @ 9600bps.
   //Set the refresh rate to 5Hz by using the ublox protocol.
   uint8_t Set_to_5Hz[14] = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xC8, 0x00, 0x01, 0x00, 0x01, 0x00, 0xDE, 0x6A};
   ss.write(Set_to_5Hz, 14);
-  delay(500);
+
+   // uint8_t Set_to_10Hz[14] = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0x64, 0x00, 0x01, 0x00, 0x01, 0x00, 0x7A, 0x12}; 
+  //ss.write(Set_to_10Hz, 14);
+  delay(350);
+
   //Disable GPGSV messages by using the ublox protocol.
- 
-  uint8_t Disable_GPGSV[16] = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x03, 0x00,0x00,0x00,0x00,0x00, 0x01, 0x03,0x39};
+  uint8_t Disable_GPGSV[16] = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x03, 0x00,0x00,0x00,0x00,0x00, 0x01, 0x03,0x39}; 
   ss.write(Disable_GPGSV, 16);
   delay(350);
+  uint8_t Disable_GPRMC[16] = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x04, 0x00,0x00,0x00,0x00,0x00, 0x01, 0x04,0x40};
+  ss.write(Disable_GPRMC, 16);
+  delay(350);
+  uint8_t Disable_GPVTG[16] = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x05, 0x00,0x00,0x00,0x00,0x00, 0x01, 0x05,0x47};
+  ss.write(Disable_GPVTG, 16);
+  delay(350);
+
 }
 
 void EEPROMwriteAddr(int Waddress, byte val)
@@ -575,7 +590,7 @@ void ISR() {
   // These are write-one-to-clear.
   //GPIO_REG(GPIO_FALL_IP) = ppm_pinmask;//use if using FALLING
   GPIO_REG(GPIO_RISE_IP) = ppm_pinmask;
-
+    
 }
 void receiverInput(void) {
   //get receiver's input
@@ -729,7 +744,7 @@ void set_gyro_registers() {
     Wire.requestFrom(gyro_address, 1);                                         //Request 1 bytes from the gyro
     while (Wire.available() < 1);                                              //Wait until the 6 bytes are received
     if (Wire.read() != 0x08) {                                                 //Check if the value is 0x08
-      //digitalWrite(STATUS_LED , LOW);                                                  //Turn on the warning led
+      digitalWrite(STATUS_LED , LOW);                                                  //Turn on the warning led
       while (1)delay(10);                                                      //Stay in this loop for ever
     }
 
@@ -744,24 +759,25 @@ void read_gps(void) {
 
   while (ss.available() && new_line_found == 0) {                                                   //Stay in this loop as long as there is serial information from the GPS available.
     char read_serial_byte = ss.read();                                                              //Load a new serial byte in the read_serial_byte variable.
-    Serial.print(read_serial_byte);
+     Serial.print(read_serial_byte);
     if (read_serial_byte == '$') {                                                                       //If the new byte equals a $ character.
-      for (message_counter = 0; message_counter <= 99; message_counter ++) {                             //Clear the old data from the incomming buffer array.
+      for (message_counter = 0; message_counter <= 99; message_counter ++) {                             //Clear the old data from the incomming buffer array.    
         incomming_message[message_counter] = '-';                                                        //Write a - at every position.
       }
       message_counter = 0;                                                                               //Reset the message_counter variable because we want to start writing at the begin of the array.
     }
     else if (message_counter <= 99)message_counter ++;                                                   //If the received byte does not equal a $ character, increase the message_counter variable.
     incomming_message[message_counter] = read_serial_byte;                                               //Write the new received byte to the new position in the incomming_message array.
+   
     if (read_serial_byte == '*') new_line_found = 1;                                                     //Every NMEA line end with a *. If this character is detected the new_line_found variable is set to 1.
   }
 
   //If the software has detected a new NMEA line it will check if it's a valid line that can be used.
   if (new_line_found == 1) {                                                                             //If a new NMEA line is found.
     new_line_found = 0;
-  //  digitalWrite(GPS_LED, HIGH); //Reset the new_line_found variable for the next line.
+    digitalWrite(GPS_LED, HIGH); //Reset the new_line_found variable for the next line.
     if (incomming_message[4] == 'L' && incomming_message[5] == 'L' && incomming_message[7] == ',') {     //When there is no GPS fix or latitude/longitude information available.
-   //   digitalWrite(GPS_LED, LOW);                                    //Change the LED on the STM32 to indicate GPS reception.
+      digitalWrite(GPS_LED, LOW);                                    //Change the LED on the STM32 to indicate GPS reception.
       //Set some variables to 0 if no valid information is found by the GPS module. This is needed for GPS lost when flying.
       l_lat_gps = 0;
       l_lon_gps = 0;
@@ -806,10 +822,7 @@ void read_gps(void) {
       number_used_sats = ((int)incomming_message[46] - 48) * (long)10;                                   //Filter the number of satillites from the GGA line.
       number_used_sats += (int)incomming_message[47] - 48;                                               //Filter the number of satillites from the GGA line.
 
-     //  Serial.print("LAT:");Serial.println(lat_gps_actual);
-     //  Serial.print("LONG:");Serial.println(lon_gps_actual);
 
-      
       if (lat_gps_previous == 0 && lon_gps_previous == 0) {                                              //If this is the first time the GPS code is used.
         lat_gps_previous = lat_gps_actual;                                                               //Set the lat_gps_previous variable to the lat_gps_actual variable.
         lon_gps_previous = lon_gps_actual;                                                               //Set the lon_gps_previous variable to the lon_gps_actual variable.
@@ -836,10 +849,16 @@ void read_gps(void) {
     if (incomming_message[4] == 'S' && incomming_message[5] == 'A') {
       fix_type = (int)incomming_message[9] - 48;
       if (((int)incomming_message[9] - 48) == 3) {
-       // digitalWrite(GPS_LED , LOW);
- 
+        digitalWrite(GPS_LED , LOW);
+       
+       Serial.print("LAT:");Serial.println(lat_gps_actual);
+       Serial.print("LONG:");Serial.println(lon_gps_actual);
+       /*Serial.print(receiver_input[1]); Serial.print("---");
+       Serial.print(receiver_input[2]); Serial.print("---");
+       Serial.print(receiver_input[3]); Serial.print("---"); Serial.println(receiver_input[4]);*/
+      }
       else if (((int)incomming_message[9] - 48) == 1) {
-       // digitalWrite(GPS_LED , HIGH);
+        digitalWrite(GPS_LED , HIGH);
       }
     }
 
@@ -865,9 +884,9 @@ void read_gps(void) {
   }
 
   if (new_gps_data_available) {                                                                           //If there is a new set of GPS data available.
-   // digitalWrite(GPS_LED, HIGH);
-    //if (number_used_sats < 8)digitalWrite(GPS_LED, LOW);                //Change the LED on the STM32 to indicate GPS reception.
-   // else digitalWrite(GPS_LED, LOW);                                                              //Turn the LED on the STM solid on (LED function is inverted). Check the STM32 schematic.
+    digitalWrite(GPS_LED, HIGH);
+    if (number_used_sats < 8)digitalWrite(GPS_LED, LOW);                //Change the LED on the STM32 to indicate GPS reception.
+    else digitalWrite(GPS_LED, LOW);                                                              //Turn the LED on the STM solid on (LED function is inverted). Check the STM32 schematic.
    // gps_watchdog_timer = millis();                                                                        //Reset the GPS watch dog tmer.
     new_gps_data_available = 0;                                                                           //Reset the new_gps_data_available variable.
 
