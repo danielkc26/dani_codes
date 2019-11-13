@@ -13,9 +13,6 @@
 
 MPU9250 mpu(SPI_CLOCK, SS_PIN);//9265 is 9250 compatible
 
-            
-//SlowSoftWire Wire = SlowSoftWire(18,19);
-//SlowSoftWire EEPROM = SlowSoftWire(2,3);
 SlowSoftWire EEPROM = SlowSoftWire(18,19);
 
 #define EEPROM_I2C_ADDRESS 0x50
@@ -120,16 +117,11 @@ unsigned long lastPulse;
 
 volatile int channel_Num=1;
 
-int r1[500];
-int r2[500];
-int r3[500];
-int r4[500];
-int r5[500];
-int r6[500];
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Setup routine
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void setup(){
+            
   Serial.begin(57600);
   pinMode(LED,OUTPUT);
   pinMode(LED2,OUTPUT);
@@ -144,13 +136,9 @@ void setup(){
   delay(250);
   
  
-  // Software SPI (specify all, use any available digital)
-  // (sck, mosi, miso, cs);
-  //adc.begin(15, 17, 16, 13); // Assign pins for ADC 
- // adc.begin(13, 11, 12, 10);
- 
+
  // Hardware SPI
-  adc.begin(8);//uses (13, 11, 12, 10-cs);
+  adc.begin(8);//uses (13, 11, 12, 8-cs);
   delay(250);
   SPI.begin();
   delay(250);
@@ -169,10 +157,7 @@ void setup(){
 
   //Use the led on the Arduino for startup indication.
   digitalWrite(LED,LOW);                                                    //Turn on the warning led.
-  /*delay(1000);
-  digitalWrite(LED,HIGH);
-   delay(1000);
-   digitalWrite(LED,LOW);*/ 
+
   //Check the EEPROM signature to make sure that the setup program is executed.
   while(eeprom_data[33] != 'J' || eeprom_data[34] != 'M' || eeprom_data[35] != 'B')delay(10);
   Serial.println(">> START-EEPROM");
@@ -296,26 +281,11 @@ void wait_for_receiver(){
 int timer=0;
 int h=0;
 void loop(){
-  //loop_counter++;
- h++;
-   loop_timer = micros();
- 
- 
+
     receiver_input_channel_1 = convert_receiver_channel(1);                 //Convert the actual receiver signals for pitch to the standard 1000 - 2000us.
     receiver_input_channel_2 = convert_receiver_channel(2);                 //Convert the actual receiver signals for roll to the standard 1000 - 2000us.
     receiver_input_channel_3 = convert_receiver_channel(3);                 //Convert the actual receiver signals for throttle to the standard 1000 - 2000us.
     receiver_input_channel_4 = convert_receiver_channel(4);                 //Convert the actual receiver signals for yaw to the standard 1000 - 2000us.
-
-/*   r1[h]=receiver_input_channel_1;
-   r2[h]=receiver_input_channel_2;
-   r3[h]=receiver_input_channel_3;
-   r4[h]=receiver_input_channel_4;
-   r5[h]=receiver_input[5];
-   r6[h]=receiver_input[6];
-    h++;*/
-  //  if(loop_counter==100){
-  //loop_counter=0;
-  //  }
 
   //65.5 = 1 deg/sec (check the datasheet of the MPU-6050 for more information).
   gyro_roll_input = (gyro_roll_input * 0.7) + (((float)gyro_roll / 65.5) * 0.3);   //Gyro pid input is deg/sec.
@@ -494,11 +464,7 @@ void loop(){
   //There is always 1000us of spare time. So let's do something usefull that is very time consuming.
   //Get the current gyro and receiver data and scale it to degrees per second for the pid calculations.
     gyro_signalen();
-    //calculate_pid();
-    //battery_voltage = battery_voltage * 0.92 + (adc.readADC(channel)+65) * 0.09853; 
-  //  if(battery_voltage < 1000 && battery_voltage > 600)digitalWrite(LED, LOW);
-    
- // while(PORTD >= 16){   
+     
    while(lowExit<1){//Stay in this loop until output 4,5,6 and 7 are low. 
      esc_loop_timer = micros();                                         //Read the current time.
     if(timer_channel_1 <= esc_loop_timer){ GPIO_REG(GPIO_OUTPUT_VAL) &= ~bitmask4 ;}//digitalWrite(4,LOW);}                //Set digital output 4 to low if the time is expired.
@@ -518,59 +484,7 @@ void loop(){
      }
     
   }
-  
-
- 
-  
-/* if(loop_counter == 0)Serial.print("Pitch: ");
-      if(loop_counter == 1)Serial.print(angle_pitch, 0 );
-      if(loop_counter == 2)Serial.print(" Roll: ");
-      if(loop_counter == 3)Serial.print(angle_roll ,0);
-      if(loop_counter == 4)Serial.print(" Yaw: ");
-      if(loop_counter == 5)Serial.println(gyro_yaw / 65.5, 0 );
     
-      loop_counter ++;
-      if(loop_counter == 60)loop_counter = 0; */
-     
-  /*Serial.print(esc_1);Serial.print("---");
-   Serial.print(esc_2);Serial.print("---");
-   Serial.print(esc_3);Serial.print("---");
-   Serial.println(esc_4);*/
-
-   /*   if(h==1000){
-    Serial.println( micros()-loop_timer);
-    //while(1);
-  }*/
-/*Serial.print(receiver_input[1]);Serial.print("-");
-Serial.print(receiver_input[2]);Serial.print("-");
-Serial.print(receiver_input[3]);Serial.print("-");
-Serial.print(receiver_input[4]);Serial.print("-");
-Serial.print(receiver_input[5]);Serial.print("-");
-Serial.println(receiver_input[6]);*/                                          //We wait until 4000us are passed.
-                                                         //Set the timer for the next loop.
-
-/*Serial.print(receiver_input_channel_1);Serial.print("-");
-Serial.print(receiver_input_channel_2);Serial.print("-");
-Serial.print(receiver_input_channel_3);Serial.print("-");
-Serial.print(receiver_input_channel_4);Serial.print("-");
-Serial.print(receiver_input[5]);Serial.print("-");
-Serial.println(receiver_input[6]);*/
-
-
-
-/*if(h==500){
-  for(int e=0;e<=500;e++){
-  Serial.print(r1[e]);Serial.print("-");
-Serial.print(r2[e]);Serial.print("-");
-Serial.print(r3[e]);Serial.print("-");
-Serial.print(r4[e]);Serial.print("-");
-Serial.print(r5[e]);Serial.print("-");
-Serial.println(r6[e]);
-  }
-  }*/
-   
-
- // if(h==1000)Serial.println(micros() - loop_timer);
  while (micros() - loop_timer < 4000);
  loop_timer = micros();
 
@@ -612,124 +526,6 @@ byte EEPROMreadAddr(int Raddress)
 //https://youtu.be/bENjl1KQbvo
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void ISR1(){
-//METHOD 1
-/*noInterrupts();
-clear_csr(mstatus, MSTATUS_MIE);
-
-  measured_time = micros() - measured_time_start;
-  if (measured_time < 0)measured_time += 0xFFFF;
-  measured_time_start = micros();
-  if (measured_time > 3000)channel_select_counter = 0;
-  else channel_select_counter++;*/
-
- /* if (channel_select_counter == 1)receiver_input[1] = measured_time;
-  if (channel_select_counter == 2)receiver_input[2] = measured_time;
-  if (channel_select_counter == 3)receiver_input[3] = measured_time;
-  if (channel_select_counter == 4)receiver_input[4] = measured_time;
-  if (channel_select_counter == 5)receiver_input[5] = measured_time;
-  if (channel_select_counter == 6)receiver_input[6] = measured_time;*/
-  
- /* if (channel_select_counter == 1){receiver_input[1] = measured_time;Serial.print(receiver_input[1]);Serial.print("-");}
-  if (channel_select_counter == 2){receiver_input[2] = measured_time;Serial.print(receiver_input[2]);Serial.print("-");}
-  if (channel_select_counter == 3){receiver_input[3] = measured_time;Serial.print(receiver_input[3]);Serial.print("-");}
-  if (channel_select_counter == 4){receiver_input[4] = measured_time;Serial.print(receiver_input[4]);Serial.print("-");}
-  if (channel_select_counter == 5){receiver_input[5] = measured_time;Serial.print(receiver_input[5]);Serial.print("-");}
-  if (channel_select_counter == 6){receiver_input[6] = measured_time;Serial.println(receiver_input[6]);}*/
-  
-   
-  
-  //METHOD 2
-/*  t[pulse]=micros();
-  switch(pulse){
-    case 1:
-    receiver_input[1]=t[1]-t[0];
-    pulse++;
-    if(receiver_input[1] > 3000){
-      t[0] = t[1];
-      pulse=1;
-    }
-    break;
-    case 2:
-    receiver_input[2]=t[2]-t[1];
-    pulse++;
-    if(receiver_input[2] > 3000){
-      t[0] = t[2];
-      pulse=1;
-    }
-    break;
-    case 3:
-    receiver_input[3]=t[3]-t[2];
-    pulse++;
-    if(receiver_input[3] > 3000){
-      t[0] = t[3];
-      pulse=1;
-    }
-    break;
-    case 4:
-    receiver_input[4]=t[4]-t[3];
-    pulse++;
-    if(receiver_input[4] > 3000){
-      t[0] = t[4];
-      pulse=1;
-    }
-    break;
-    case 5:
-    receiver_input[5]=t[5]-t[4];
-    pulse++;
-    if(receiver_input[5] > 3000){
-      t[0] = t[5];
-      pulse=1;
-    }
-    break;
-     case 6:
-    receiver_input[6]=t[6]-t[5];
-    pulse++;
-    if(receiver_input[6] > 3000){
-      t[0] = t[6];
-      pulse=1;
-    }
-    break;
-    case 7:
-    receiver_input[7]=t[7]-t[6];
-    pulse++;
-    if(receiver_input[7] > 3000){
-      t[0] = t[7];
-      pulse=1;
-    }
-    break;
-    default:
-    pulse++;
-    break;
-  }*/
-
-  //METHOD 3
-  
-/*noInterrupts();
-clear_csr(mstatus, MSTATUS_MIE);
-  unsigned long now = micros ();
-
-
-  // a long gap means we start again
-  if ((now - lastPulse) >= 3000)
-    count = 0;
-
-  lastPulse = now;
-  if (count >= (SIGNAL_COUNT +1))
-    return;
-
-  widths [count++] = now;
-  // Clear out the interrupt pending bit, or the interrupt will 
-  // just happen again as soon as we return,
-  // and we'll never get back into our loop() function. 
-  // These are write-one-to-clear.
-  //GPIO_REG(GPIO_FALL_IP) = ppmPinMsk;
-*/
- set_csr(mstatus, MSTATUS_MIE);
-interrupts();
-  GPIO_REG(GPIO_RISE_IP) = ppmPinMsk;
- 
-}
 void ISR(){
 
   //METHOD 3
