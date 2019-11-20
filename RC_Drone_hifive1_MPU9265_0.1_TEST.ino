@@ -37,24 +37,23 @@ float MPUdata;
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //PID gain and limit settings
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-float pid_p_gain_roll =0.70;//0.75;       //Gain setting for the roll P-controller
-float pid_i_gain_roll =0.0010;// 0.00010;           //Gain setting for the roll I-controller
-float pid_d_gain_roll = 3.75;//3.5;               //Gain setting for the roll D-controller
+float pid_p_gain_roll =0.70;                 //Gain setting for the roll P-controller
+float pid_i_gain_roll =0.0010;               //Gain setting for the roll I-controller
+float pid_d_gain_roll = 3.75;                //Gain setting for the roll D-controller
 
-int pid_max_roll = 400;                    //Maximum output of the PID-controller (+/-)
+int pid_max_roll = 400;                      //Maximum output of the PID-controller (+/-)
 
-float pid_p_gain_pitch = pid_p_gain_roll;  //Gain setting for the pitch P-controller.
-float pid_i_gain_pitch = pid_i_gain_roll;  //Gain setting for the pitch I-controller.
-float pid_d_gain_pitch = pid_d_gain_roll;  //Gain setting for the pitch D-controller.
-int pid_max_pitch = pid_max_roll;          //Maximum output of the PID-controller (+/-)
+float pid_p_gain_pitch = pid_p_gain_roll;    //Gain setting for the pitch P-controller.
+float pid_i_gain_pitch = pid_i_gain_roll;    //Gain setting for the pitch I-controller.
+float pid_d_gain_pitch = pid_d_gain_roll;    //Gain setting for the pitch D-controller.
+int pid_max_pitch = pid_max_roll;            //Maximum output of the PID-controller (+/-)
 
-//float pid_p_gain_yaw = 4.0;                //Gain setting for the pitch P-controller. //4.0
-float pid_p_gain_yaw = 11.0 ;//3.5;                //Gain setting for the pitch P-controller. //4.0
-float pid_i_gain_yaw = 0.05;               //Gain setting for the pitch I-controller. //0.02
-float pid_d_gain_yaw = 1.75;                //Gain setting for the pitch D-controller.
-int pid_max_yaw = 400;                     //Maximum output of the PID-controller (+/-)
+float pid_p_gain_yaw = 11.0 ;                //Gain setting for the pitch P-controller. //4.0
+float pid_i_gain_yaw = 0.05;                 //Gain setting for the pitch I-controller. //0.02
+float pid_d_gain_yaw = 1.75;                 //Gain setting for the pitch D-controller.
+int pid_max_yaw = 400;                       //Maximum output of the PID-controller (+/-)
 
-boolean auto_level = true;                 //Auto level on (true) or off (false)
+boolean auto_level = true;                   //Auto level on (true) or off (false)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Declaring global variables
@@ -104,9 +103,11 @@ uint32_t bitmask7 = digitalPinToBitMask(pin7);
 int channel=ADC_CHANNEL;
 int lowExit=0;
 int j=0;
+
 //PPM method 2
 unsigned long t[8];
 int pulse=0;
+
 //PPM method 3
 const int SIGNAL_COUNT = 7;
 
@@ -153,7 +154,6 @@ void setup(){
   for(start = 0; start <= 35; start++)eeprom_data[start] = EEPROMreadAddr(start);
   start = 0;                                                                //Set start back to zero.
   gyro_address = eeprom_data[32];                                           //Store the gyro address in the variable.
-  
 
   //Use the led on the Arduino for startup indication.
   digitalWrite(LED,LOW);                                                    //Turn on the warning led.
@@ -164,46 +164,56 @@ void setup(){
   //The flight controller needs the MPU-6050 with gyro and accelerometer
   //If setup is completed without MPU-6050 stop the flight controller program  
   if(eeprom_data[31] == 2 || eeprom_data[31] == 3)delay(10);
+  
   Serial.println(">> START-GYRO");
+ 
   set_gyro_registers();                                                     //Set the specific gyro registers.
+  
   Serial.println(">> GYRO-STARTED");
   Serial.print(">> GPIO-SETTINGS");
+ 
   for (cal_int = 0; cal_int < 1250 ; cal_int ++){                           //Wait 5 seconds before continuing.
-        if(cal_int % 125 == 0){
-         // digitalWrite(LED, !digitalRead(LED));   //Change the led status to indicate calibration.
-          Serial.print(".");
-        }
+    if(cal_int % 125 == 0){
+     // digitalWrite(LED, !digitalRead(LED));   //Change the led status to indicate calibration.
+      Serial.print(".");
+    }
   //Set digital port 4, 5, 6 and 7 high.                                                    
-  GPIO_REG(GPIO_OUTPUT_VAL) |= bitmask4 | bitmask5 | bitmask6| bitmask7 ;//HIGH  
-  delayMicroseconds(1000);                                                //Wait 1000us.                                           
-   //Set digital port 4, 5, 6 and 7 low.
-  GPIO_REG(GPIO_OUTPUT_VAL) &= ~bitmask4 & (~bitmask5) & (~bitmask6) & (~bitmask7);//LOW
-  delayMicroseconds(3000);                                                //Wait 3000us.
+    GPIO_REG(GPIO_OUTPUT_VAL) |= bitmask4 | bitmask5 | bitmask6| bitmask7 ;   //HIGH  
+    delayMicroseconds(1000);                                                  //Wait 1000us.                                           
+     //Set digital port 4, 5, 6 and 7 low.
+    GPIO_REG(GPIO_OUTPUT_VAL) &= ~bitmask4 & (~bitmask5) & (~bitmask6) & (~bitmask7);//LOW
+    delayMicroseconds(3000);                                                  //Wait 3000us.
   }
+  
  Serial.println("."); 
  Serial.println(">> GYRO CALIBRATION");
+  
   //Let's take multiple gyro data samples so we can determine the average gyro offset (calibration).
  Serial.print(">> CALIBRATING");
+  
   for (cal_int = 0; cal_int < 2000 ; cal_int ++){                         //Take 2000 readings for calibration.
   
-  if(cal_int % 125 == 0){
-         // digitalWrite(LED, !digitalRead(LED));   //Change the led status to indicate calibration.
-          Serial.print(".");
-        }
-  digitalWrite(LED, LOW);      
-  if(cal_int % 15 == 0)digitalWrite(LED, HIGH);                //Change the led status to indicate calibration.
-  gyro_signalen();                                                        //Read the gyro output.
-  gyro_axis_cal[1] += gyro_axis[1];                                       //Ad roll value to gyro_roll_cal.
-  gyro_axis_cal[2] += gyro_axis[2];                                       //Ad pitch value to gyro_pitch_cal.
-  gyro_axis_cal[3] += gyro_axis[3];                                       //Ad yaw value to gyro_yaw_cal.
-  
-  //We don't want the esc's to be beeping annoyingly. So let's give them a 1000us puls while calibrating the gyro.
-  //Set digital port 4, 5, 6 and 7 high.
-  GPIO_REG(GPIO_OUTPUT_VAL) |= bitmask4 | bitmask5 | bitmask6| bitmask7 ; //HIGH  
-  delayMicroseconds(1000);                                                //Wait 1000us.
-  
-  GPIO_REG(GPIO_OUTPUT_VAL) &= ~bitmask4 & (~bitmask5) & (~bitmask6) & (~bitmask7);//LOW
-  delay(3);                                                               //Wait 3 milliseconds before the next loop.
+    if(cal_int % 125 == 0){
+           // digitalWrite(LED, !digitalRead(LED));   //Change the led status to indicate calibration.
+            Serial.print(".");
+     }
+    digitalWrite(LED, LOW);      
+
+    if(cal_int % 15 == 0)digitalWrite(LED, HIGH);                //Change the led status to indicate calibration.
+
+    gyro_signalen();                                                        //Read the gyro output.
+
+    gyro_axis_cal[1] += gyro_axis[1];                                       //Ad roll value to gyro_roll_cal.
+    gyro_axis_cal[2] += gyro_axis[2];                                       //Ad pitch value to gyro_pitch_cal.
+    gyro_axis_cal[3] += gyro_axis[3];                                       //Ad yaw value to gyro_yaw_cal.
+
+    //We don't want the esc's to be beeping annoyingly. So let's give them a 1000us puls while calibrating the gyro.
+    //Set digital port 4, 5, 6 and 7 high.
+    GPIO_REG(GPIO_OUTPUT_VAL) |= bitmask4 | bitmask5 | bitmask6| bitmask7 ; //HIGH  
+    delayMicroseconds(1000);                                                //Wait 1000us.
+
+    GPIO_REG(GPIO_OUTPUT_VAL) &= ~bitmask4 & (~bitmask5) & (~bitmask6) & (~bitmask7);//LOW
+    delay(3);                                                               //Wait 3 milliseconds before the next loop.
   }
   Serial.println("."); 
   Serial.println(">> CALIBRATED");
@@ -217,8 +227,6 @@ void setup(){
   attachInterrupt(digitalPinToInterrupt(ppmPin), ISR, RISING);
   set_csr(mstatus, MSTATUS_MIE); 
 
-//wait_for_receiver(); //Wait until the receiver is active.
- 
   //Wait until the receiver is active and the throtle is set to the lower position.
   while(receiver_input_channel_3 < 990 || receiver_input_channel_3 > 1020 || receiver_input_channel_4 < 1400){
   //Serial.print(receiver_input[3]);Serial.print("-");Serial.println(receiver_input_channel_3);
@@ -261,19 +269,6 @@ void setup(){
   Serial.println(">> SETUP DONE");
 
 }
-void wait_for_receiver(){
-  byte zero = 0;//zero < 57 for 6 chs                                                                //Set all bits in the variable zero to 0
-  while(zero < 15){                                                             //Stay in this loop until the 4 lowest bits are set
-    if(receiver_input[1] < 2100 && receiver_input[1] > 900)zero |= 0b00000001;  //Set bit 0 if the receiver pulse 1 is within the 900 - 2100 range
-    if(receiver_input[2] < 2100 && receiver_input[2] > 900)zero |= 0b00000010;  //Set bit 1 if the receiver pulse 2 is within the 900 - 2100 range
-    if(receiver_input[3] < 2100 && receiver_input[3] > 900)zero |= 0b00000100;  //Set bit 2 if the receiver pulse 3 is within the 900 - 2100 range
-    if(receiver_input[4] < 2100 && receiver_input[4] > 900)zero |= 0b00001000;  //Set bit 3 if the receiver pulse 4 is within the 900 - 2100 range
-    //if(receiver_input[5] < 2100 && receiver_input[5] > 900)zero |= 0b00010000;
-    //if(receiver_input[6] < 2100 && receiver_input[6] > 900)zero |= 0b00100000;
-    delay(500);                                                                 //Wait 500 milliseconds
-  }
-
-}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Main program loop
@@ -282,10 +277,10 @@ int timer=0;
 int h=0;
 void loop(){
 
-    receiver_input_channel_1 = convert_receiver_channel(1);                 //Convert the actual receiver signals for pitch to the standard 1000 - 2000us.
-    receiver_input_channel_2 = convert_receiver_channel(2);                 //Convert the actual receiver signals for roll to the standard 1000 - 2000us.
-    receiver_input_channel_3 = convert_receiver_channel(3);                 //Convert the actual receiver signals for throttle to the standard 1000 - 2000us.
-    receiver_input_channel_4 = convert_receiver_channel(4);                 //Convert the actual receiver signals for yaw to the standard 1000 - 2000us.
+  receiver_input_channel_1 = convert_receiver_channel(1);                 //Convert the actual receiver signals for pitch to the standard 1000 - 2000us.
+  receiver_input_channel_2 = convert_receiver_channel(2);                 //Convert the actual receiver signals for roll to the standard 1000 - 2000us.
+  receiver_input_channel_3 = convert_receiver_channel(3);                 //Convert the actual receiver signals for throttle to the standard 1000 - 2000us.
+  receiver_input_channel_4 = convert_receiver_channel(4);                 //Convert the actual receiver signals for yaw to the standard 1000 - 2000us.
 
   //65.5 = 1 deg/sec (check the datasheet of the MPU-6050 for more information).
   gyro_roll_input = (gyro_roll_input * 0.7) + (((float)gyro_roll / 65.5) * 0.3);   //Gyro pid input is deg/sec.
@@ -552,7 +547,7 @@ void ISR(){
     // Serial.print (widths [channel_Num] - widths [channel_Num - 1]);
        receiver_input[channel_Num]=widths [channel_Num] - widths [channel_Num - 1];
       
-      Serial.print(" - ");Serial.print(receiver_input[channel_Num]);
+    //  Serial.print(" - ");Serial.print(receiver_input[channel_Num]);
        channel_Num++;
   }
  if (count >= SIGNAL_COUNT)
