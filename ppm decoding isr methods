@@ -1,0 +1,120 @@
+----------------------------------------------------->>method 1
+void ISR(){
+
+  measured_time = micros() - measured_time_start;
+  if (measured_time < 0)measured_time += 0xFFFF;
+  measured_time_start = micros();
+  if (measured_time > 3000)channel_select_counter = 0;
+  else channel_select_counter++;
+
+  if (channel_select_counter == 1)receiver_input[1] = measured_time;
+  if (channel_select_counter == 2)receiver_input[2] = measured_time;
+  if (channel_select_counter == 3)receiver_input[3] = measured_time;
+  if (channel_select_counter == 4)receiver_input[4] = measured_time;
+  if (channel_select_counter == 5)receiver_input[5] = measured_time;
+  if (channel_select_counter == 6)receiver_input[6] = measured_time;
+  
+  // Clear out the interrupt pending bit, or the interrupt will 
+  // just happen again as soon as we return,
+  // and we'll never get back into our loop() function. 
+  // These are write-one-to-clear.
+ 
+  GPIO_REG(GPIO_RISE_IP) = ppmPinMsk;
+ 
+}
+----------------------------------------------------->>method 2
+void ISR(){
+ t[pulse]=micros();
+  switch(pulse){
+    case 1:
+    receiver_input[1]=t[1]-t[0];
+    pulse++;
+    if(receiver_input[1] > 3000){
+      t[0] = t[1];
+      pulse=1;
+    }
+    break;
+    case 2:
+    receiver_input[2]=t[2]-t[1];
+    pulse++;
+    if(receiver_input[2] > 3000){
+      t[0] = t[2];
+      pulse=1;
+    }
+    break;
+    case 3:
+    receiver_input[3]=t[3]-t[2];
+    pulse++;
+    if(receiver_input[3] > 3000){
+      t[0] = t[3];
+      pulse=1;
+    }
+    break;
+    case 4:
+    receiver_input[4]=t[4]-t[3];
+    pulse++;
+    if(receiver_input[4] > 3000){
+      t[0] = t[4];
+      pulse=1;
+    }
+    break;
+    case 5:
+    receiver_input[5]=t[5]-t[4];
+    pulse++;
+    if(receiver_input[5] > 3000){
+      t[0] = t[5];
+      pulse=1;
+    }
+    break;
+     case 6:
+    receiver_input[6]=t[6]-t[5];
+    pulse++;
+    if(receiver_input[6] > 3000){
+      t[0] = t[6];
+      pulse=1;
+    }
+    break;
+    case 7:
+    receiver_input[7]=t[7]-t[6];
+    pulse++;
+    if(receiver_input[7] > 3000){
+      t[0] = t[7];
+      pulse=1;
+    }
+    break;
+    default:
+    pulse++;
+    break;
+  }
+  
+  GPIO_REG(GPIO_RISE_IP) = ppmPinMsk;
+  }
+  
+  -------------------------------------------------->>method 3
+ void ISR(){
+ unsigned long now = micros ();
+  // a long gap means we start again
+  if ((now - lastPulse) >= 3000)
+    count = 0;
+
+  lastPulse = now;
+  if (count >= (SIGNAL_COUNT +1))
+    return;
+
+  widths [count++] = now;
+   if(channel_Num < count ){
+    //  Serial.print (" Ch ");
+    //  Serial.print (channel_Num);
+       // Serial.print (" - ");
+    // Serial.print (widths [channel_Num] - widths [channel_Num - 1]);
+       receiver_input[channel_Num]=widths [channel_Num] - widths [channel_Num - 1];
+      
+     //  Serial.print(" - ");Serial.print(receiver_input[channel_Num]);
+       channel_Num++;
+  }
+ if (count >= SIGNAL_COUNT)
+    {
+    count = 0;
+    channel_Num=1;     
+    }
+  }
