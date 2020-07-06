@@ -1,0 +1,49 @@
+{
+ "build": {
+  
+    "core": "nRF5",
+    "cpu": "cortex-m4",
+    "f_cpu": "64000000L",
+    "mcu": "nrf52833",
+    "variant": "nRF52833DK",
+    "zephyr": {
+       "variant": "nrf52833_pca10100"
+    }
+  },
+  "connectivity": [
+    "bluetooth"
+  ],
+  "debug": {
+    "default_tools": [
+      "jlink"
+    ],
+    "jlink_device": "nRF52833_xxAA",
+    "onboard_tools": [
+      "cmsis-dap",
+      "jlink"
+    ],
+    "svd_path": "nrf52833.svd"
+  },
+  "frameworks": [
+    "zephyr"
+  ],
+  "name": "Nordic nRF52833-DK",
+  "upload": {
+    "maximum_ram_size": 131072,
+    "maximum_size": 524288,
+    "protocol": "jlink",
+    "protocols": [
+      "jlink",
+      "nrfjprog",
+      "stlink",
+      "blackmagic",
+      "cmsis-dap",
+      "mbed"
+    ]
+  },
+  "url": "https://www.nordicsemi.com/Software-and-tools/Development-Kits/nRF52833-DK",
+  "vendor": "Nordic"
+
+
+
+}
